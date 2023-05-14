@@ -1,0 +1,156 @@
+name: rso-auth
+version: 0.1.0
+specVersion: v1beta
+displayName: Sign on with RSO
+description: >-
+  Issue custom tokens for Firebase with Riot Sign On.
+
+license: Apache-2.0
+sourceUrl: https://github.com/trilleplay/rso-firebase-extension/
+billingRequired: true
+
+apis:
+  - apiName: iam.googleapis.com
+    reason: Sign authentication tokens
+  - apiName: iamcredentials.googleapis.com
+    reason: Sign authentication tokens
+  - apiName: secretmanager.googleapis.com
+    reason: Securely access and store your client secret.
+
+externalServices:
+  - name: Riot Games API
+    pricingUri: https://developer.riotgames.com/terms
+
+roles:
+  - role: firebaseauth.admin
+    reason: Requried in-order to issue Firebase custom tokens.
+
+resources:
+  - name: constructRiotAuth
+    type: firebaseextensions.v1beta.function
+    description: >-
+      HTTP request-triggered function that responds with a specified greeting message
+    properties:
+      location: ${LOCATION}
+      httpsTrigger: {}
+      runtime: "nodejs18"
+  - name: riotAuthCallback
+    type: firebaseextensions.v1beta.function
+    description: >-
+      Handle the OAuth callback from Riot Sign On.
+    properties:
+      location: ${LOCATION}
+      httpsTrigger: {}
+      runtime: "nodejs18"
+
+params:
+  - param: RIOT_CALLBACK_URL
+    label: OAuth2 Callback URL
+    description: >-
+      The callback url that is registered with Riot Games.
+    type: string
+    required: true
+    immutable: false
+  
+  - param: RIOT_CLIENT_ID
+    label: OAuth2 Client ID
+    description: >-
+      The client id registered with Riot.
+    type: string
+    required: true
+    immutable: true
+  
+  - param: RIOT_AUTH_SCOPES
+    label: List of scopes
+    description: >-
+      The list of scopes that you want to use, seperated by spaces.
+      Valid scopes are: openid, cpid and offline_access
+    type: string
+    required: true
+    default: openid
+    immutable: false
+
+  - param: RIOT_CLIENT_SECRET_ID
+    label: Client Secret Location on Google Cloud Secret Manager.
+    description: >-
+      The ID of the object in Google Clouds Secret Manager which has the value of the Riot Client Secret ID.
+    type: string
+    required: true
+    immutable: false
+  
+  - param: RIOT_API_GATEWAY
+    label: The API Gateway to use for Account-V1 calls.
+    description: >-
+      The Riot Games Account-V1 API requires a region to execute against.
+      Refer to the [Account-V1 docs](https://developer.riotgames.com/apis#account-v1/GET_getByAccessToken).
+    type: select
+    options:
+      - label: Americas
+        value: americas
+      - label: Asia
+        value: asia
+      - label: Esports
+        value: esports
+      - label: Europe
+        value: europe
+    required: true
+    immutable: true
+  
+  - param: APPLICATION_URL
+    label: A link which opens the authentication flow (will recieve postMessage's) when a users authentication succeeds or fails.
+    description: >-
+      An application URL where users who authenticate or cancels authentication, a message is posted through the postMessage to this location.
+    type: string
+    required: true
+    immutable: false
+  
+  - param: LOCATION
+    label: Cloud Functions location
+    description: >-
+      Where do you want to deploy the functions created for this extension?
+      For help selecting a location, refer to the [location selection
+      guide](https://firebase.google.com/docs/functions/locations).
+    type: select
+    options:
+      - label: Iowa (us-central1)
+        value: us-central1
+      - label: South Carolina (us-east1)
+        value: us-east1
+      - label: Northern Virginia (us-east4)
+        value: us-east4
+      - label: Los Angeles (us-west2)
+        value: us-west2
+      - label: Salt Lake City (us-west3)
+        value: us-west3
+      - label: Las Vegas (us-west4)
+        value: us-west4
+      - label: Warsaw (europe-central2)
+        value: europe-central2
+      - label: Belgium (europe-west1)
+        value: europe-west1
+      - label: London (europe-west2)
+        value: europe-west2
+      - label: Frankfurt (europe-west3)
+        value: europe-west3
+      - label: Zurich (europe-west6)
+        value: europe-west6
+      - label: Hong Kong (asia-east2)
+        value: asia-east2
+      - label: Tokyo (asia-northeast1)
+        value: asia-northeast1
+      - label: Osaka (asia-northeast2)
+        value: asia-northeast2
+      - label: Seoul (asia-northeast3)
+        value: asia-northeast3
+      - label: Mumbai (asia-south1)
+        value: asia-south1
+      - label: Jakarta (asia-southeast2)
+        value: asia-southeast2
+      - label: Montreal (northamerica-northeast1)
+        value: northamerica-northeast1
+      - label: Sao Paulo (southamerica-east1)
+        value: southamerica-east1
+      - label: Sydney (australia-southeast1)
+        value: australia-southeast1
+    required: true
+    immutable: true
