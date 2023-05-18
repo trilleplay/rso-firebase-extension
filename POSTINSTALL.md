@@ -1,6 +1,6 @@
 # How it works
 
-If you've just setup the extension you're going to want to go into the Google Cloud Project associated with this Firebase application and locate the service account that was created for it. After which you're going to want to give access to this service account in Google Secrets Manager to read the secret `RIOT_CLIENT_SECRET_ID` that you specified during setup. You're also going to give the service account the permission "Service Account Token Creator" so the extension is able to issue custom sign in tokens.
+If you've just setup the extension you're going to want to go into the Google Cloud Project associated with this Firebase application and locate the service account that was created for it. After which you're going to give the service account the permission "Service Account Token Creator" so the extension is able to issue custom sign in tokens.
 
 Then you're good to go! 
 #### Key information
