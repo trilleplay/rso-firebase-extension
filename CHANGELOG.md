@@ -1,4 +1,4 @@
-## Version 0.1.2.1
+## Version 0.1.3
 Update documentation to reflect new secret type.
 ## Version 0.1.2
 Switch to the secret type, rather than using secret manager directly.
