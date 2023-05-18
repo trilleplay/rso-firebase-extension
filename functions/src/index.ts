@@ -3,16 +3,12 @@
  */
 
 import axios from "axios";
-import * as crypto from "crypto"
+import * as crypto from "crypto";
 import * as functions from "firebase-functions";
-import * as NodeCache from "node-cache";
 import * as firebaseAdmin from "firebase-admin";
-import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
-
 
 firebaseAdmin.initializeApp();
 
-const constantCache = new NodeCache();
 const riotProvider = new URL("https://auth.riotgames.com");
 exports.constructRiotAuth = functions.https.onRequest(
   (req: functions.Request, res: functions.Response) => {
@@ -50,77 +46,73 @@ exports.riotAuthCallback = functions.https.onRequest(
       redirect_uri: process.env.RIOT_CALLBACK_URL as string,
     });
 
-    retrieveSecret().then((clientSecret) => {
-      axios
-        .post(riotProvider + "token", authForm, {
-          auth: {
-            username: (process.env.RIOT_CLIENT_ID ??= ""),
-            password: clientSecret,
-          },
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-        })
-        .then((response) => {
-          if (response.status == 200) {
-            const accessToken = response.data.access_token;
-            axios
-              .get(riotProvider + "userinfo", {
-                headers: {
-                  Authorization: `Bearer ${accessToken}`,
-                },
-              })
-              .then((response) => {
-                const leagueRegion = response.data.cpid;
-                axios
-                  .get(
-                    `https://${process.env.RIOT_API_GATEWAY}.api.riotgames.com/riot/account/v1/accounts/me`,
-                    {
-                      headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                      },
-                    }
-                  )
-                  .then((accountResponse) => {
-                    if (response.status == 200) {
-                      firebaseAdmin
-                        .auth()
-                        .createCustomToken(accountResponse.data.puuid, {
-                          cpid: leagueRegion,
-                        })
-                        .then((token) => {
-                          replyWithMessage(res, "ok", token);
-                        })
-                        .catch((_) => {
-                          replyWithMessage(
-                            res,
-                            "error",
-                            "FIREBASE_TOKEN_CREATION"
-                          );
-                        });
-                    } else {
-                      replyWithMessage(res, "error", "ACCOUNT_FETCH");
-                    }
-                  })
-                  .catch((_) => {
+    axios
+      .post(riotProvider + "token", authForm, {
+        auth: {
+          username: (process.env.RIOT_CLIENT_ID ??= ""),
+          password: (process.env.RIOT_CLIENT_SECRET ??= ""),
+        },
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      })
+      .then((response) => {
+        if (response.status == 200) {
+          const accessToken = response.data.access_token;
+          axios
+            .get(riotProvider + "userinfo", {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            })
+            .then((response) => {
+              const leagueRegion = response.data.cpid;
+              axios
+                .get(
+                  `https://${process.env.RIOT_API_GATEWAY}.api.riotgames.com/riot/account/v1/accounts/me`,
+                  {
+                    headers: {
+                      Authorization: `Bearer ${accessToken}`,
+                    },
+                  }
+                )
+                .then((accountResponse) => {
+                  if (response.status == 200) {
+                    firebaseAdmin
+                      .auth()
+                      .createCustomToken(accountResponse.data.puuid, {
+                        cpid: leagueRegion,
+                      })
+                      .then((token) => {
+                        replyWithMessage(res, "ok", token);
+                      })
+                      .catch((_) => {
+                        replyWithMessage(
+                          res,
+                          "error",
+                          "FIREBASE_TOKEN_CREATION"
+                        );
+                      });
+                  } else {
                     replyWithMessage(res, "error", "ACCOUNT_FETCH");
-                  });
-              })
-              .catch((_) => {
-                replyWithMessage(res, "error", "ACCOUNT_FETCH");
-              });
-          } else {
-            replyWithMessage(res, "error", "ACCESS_TOKEN_FETCH");
-          }
-        })
-        .catch((_) => {
+                  }
+                })
+                .catch((_) => {
+                  replyWithMessage(res, "error", "ACCOUNT_FETCH");
+                });
+            })
+            .catch((_) => {
+              replyWithMessage(res, "error", "ACCOUNT_FETCH");
+            });
+        } else {
           replyWithMessage(res, "error", "ACCESS_TOKEN_FETCH");
-        });
-    });
+        }
+      })
+      .catch((_) => {
+        replyWithMessage(res, "error", "ACCESS_TOKEN_FETCH");
+      });
   }
 );
-
-const cacheKeyRiotSecret = "rsoAuthSecretToken";
 
 function replyWithMessage(
   res: functions.Response,
@@ -140,28 +132,6 @@ function replyWithMessage(
     </script>
     </body>
   </html>`);
-}
-
-async function retrieveSecret(): Promise<string> {
-  if (constantCache.has(cacheKeyRiotSecret)) {
-    const cachedSecret = constantCache.get<string>(cacheKeyRiotSecret);
-    if (cachedSecret) {
-      return cachedSecret;
-    }
-  }
-  const constantSecretManager = new SecretManagerServiceClient();
-  const [version] = await constantSecretManager.accessSecretVersion({
-    name: process.env.RIOT_CLIENT_SECRET_ID,
-  });
-
-  // Extract the payload as a string.
-  if (version.payload == null || version.payload.data == null) {
-    return "";
-  }
-  const secret = version.payload.data.toString();
-  // Cache secret for five minutes.
-  constantCache.set(cacheKeyRiotSecret, secret, 60 * 5);
-  return secret;
 }
 
 function constructAuthUrl(state: string): URL {

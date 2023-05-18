@@ -1,5 +1,5 @@
 name: rso-auth
-version: 0.1.1
+version: 0.1.2
 specVersion: v1beta
 displayName: Sign on with RSO
 description: >-
@@ -16,7 +16,7 @@ apis:
   - apiName: iamcredentials.googleapis.com
     reason: Sign authentication tokens
   - apiName: secretmanager.googleapis.com
-    reason: Securely access and store your client secret.
+    reason: Firebase secrets use Google Secret Manager to store the secrets.
 
 externalServices:
   - name: Riot Games API
@@ -71,13 +71,13 @@ params:
     default: openid
     immutable: false
 
-  - param: RIOT_CLIENT_SECRET_ID
-    label: Client Secret Location on Google Cloud Secret Manager.
+  - param: RIOT_CLIENT_SECRET
+    label: OAuth2 Client Secret
     description: >-
-      The ID of the object in Google Clouds Secret Manager which has the value of the Riot Client Secret ID.
-    type: string
+      The client secret provisioned by Riot.
+    type: secret
     required: true
-    immutable: false
+    immutable: true
   
   - param: RIOT_API_GATEWAY
     label: The API Gateway to use for Account-V1 calls.
